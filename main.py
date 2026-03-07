@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
-import os
+import json
 
 app = FastAPI()
 
@@ -22,6 +22,17 @@ async def verify_webhook(request: Request):
 # 2️⃣ Receive messages
 @app.post("/instagram/webhook")
 async def receive_webhook(request: Request):
-    data = await request.json()
-    print("Webhook received:", data)
+    body = await request.body()
+
+    if not body:
+        print("⚠️ Empty webhook request")
+        return {"status": "empty"}
+
+    try:
+        data = json.loads(body)
+        print("📩 Webhook received:", data)
+    except Exception as e:
+        print("❌ JSON parse error:", str(e))
+        print("Raw body:", body)
+
     return {"status": "ok"}
