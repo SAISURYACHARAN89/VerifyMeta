@@ -23,7 +23,7 @@ async def verify_webhook(request: Request):
 
 def send_message(user_id, text):
 
-    url = "https://graph.facebook.com/v19.0/17841479663844392/messages"
+    url = "https://graph.facebook.com/v19.0/me/messages"
 
     params = {
         "access_token": PAGE_TOKEN
