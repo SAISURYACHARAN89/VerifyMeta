@@ -21,14 +21,12 @@ async def verify_webhook(request: Request):
     return PlainTextResponse("Verification failed", status_code=403)
 
 
-# function to send message
 def send_message(user_id, text):
 
-    url = "https://graph.facebook.com/v19.0/me/messages"
+    url = "https://graph.facebook.com/v19.0/17841479663844392/messages"
 
-    headers = {
-        "Authorization": f"Bearer {PAGE_TOKEN}",
-        "Content-Type": "application/json"
+    params = {
+        "access_token": PAGE_TOKEN
     }
 
     payload = {
@@ -36,10 +34,9 @@ def send_message(user_id, text):
         "message": {"text": text}
     }
 
-    r = requests.post(url, headers=headers, json=payload)
+    r = requests.post(url, params=params, json=payload)
 
     print("Send response:", r.text)
-
 
 # webhook receiver
 @app.post("/instagram/webhook")
