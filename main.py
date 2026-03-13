@@ -6,11 +6,22 @@ import json
 app = FastAPI()
 
 VERIFY_TOKEN = "tricher_verify_token"
+
 PAGE_TOKEN = "EAANKvOrEB0cBQyuIyhtHaBaPBQJVT0Fw4hir0WoJu1eWnFaoa68xLZCyyLvAO2ZCMn1GuQXFgy87dSGhzd9kDZAHWTUK9ZA75wEHiqopo1tF5T9zZBZCtJ5L4Qxu5341VW9pV1NBZCMP9wNSdmcU4Fug7C5p9wktkFgT2nZCZCEFMZA0V5GVNu5jAMGbBu4AZCFlhqJtnE5oDHrh638ZAydQHkD60ojHJHUG5F4Qv57loR5rsntssQNIqTe8judm"
 
+
+# store messages for dashboard
+messages = []
+
+last_user = None
+
+
+# =========================
 # webhook verification
+# =========================
 @app.get("/instagram/webhook")
 async def verify_webhook(request: Request):
+
     mode = request.query_params.get("hub.mode")
     token = request.query_params.get("hub.verify_token")
     challenge = request.query_params.get("hub.challenge")
@@ -21,6 +32,9 @@ async def verify_webhook(request: Request):
     return PlainTextResponse("Verification failed", status_code=403)
 
 
+# =========================
+# send message to instagram
+# =========================
 def send_message(user_id, text):
 
     url = "https://graph.facebook.com/v19.0/me/messages"
@@ -38,25 +52,68 @@ def send_message(user_id, text):
 
     print("Send response:", r.text)
 
+
+# =========================
 # webhook receiver
+# =========================
 @app.post("/instagram/webhook")
 async def receive_webhook(request: Request):
+
+    global last_user
 
     body = await request.body()
     data = json.loads(body)
 
-    print("📩 Webhook received:", data)
+    print("Webhook:", data)
 
     for entry in data.get("entry", []):
         for msg in entry.get("messaging", []):
 
             sender_id = msg["sender"]["id"]
 
+            last_user = sender_id
+
             if "message" in msg and "text" in msg["message"]:
+
                 text = msg["message"]["text"]
 
                 print("User said:", text)
 
-                send_message(sender_id, "Hello! 👋 Thanks for messaging Tricher. How can I help you?")
+                messages.append({
+                    "from": "user",
+                    "text": text
+                })
 
     return {"status": "ok"}
+
+
+# =========================
+# get messages for dashboard
+# =========================
+@app.get("/messages")
+def get_messages():
+    return messages
+
+
+# =========================
+# send reply from dashboard
+# =========================
+@app.post("/send")
+async def send_reply(request: Request):
+
+    global last_user
+
+    data = await request.json()
+
+    text = data["text"]
+
+    if last_user is not None:
+
+        send_message(last_user, text)
+
+        messages.append({
+            "from": "me",
+            "text": text
+        })
+
+    return {"ok": True}
