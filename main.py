@@ -1,18 +1,25 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 import json
 
 app = FastAPI()
 
+# ✅ CORS FIX
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 VERIFY_TOKEN = "tricher_verify_token"
 
 PAGE_TOKEN = "EAANKvOrEB0cBQyuIyhtHaBaPBQJVT0Fw4hir0WoJu1eWnFaoa68xLZCyyLvAO2ZCMn1GuQXFgy87dSGhzd9kDZAHWTUK9ZA75wEHiqopo1tF5T9zZBZCtJ5L4Qxu5341VW9pV1NBZCMP9wNSdmcU4Fug7C5p9wktkFgT2nZCZCEFMZA0V5GVNu5jAMGbBu4AZCFlhqJtnE5oDHrh638ZAydQHkD60ojHJHUG5F4Qv57loR5rsntssQNIqTe8judm"
 
-
-# store messages for dashboard
 messages = []
-
 last_user = None
 
 
@@ -33,7 +40,7 @@ async def verify_webhook(request: Request):
 
 
 # =========================
-# send message to instagram
+# send message
 # =========================
 def send_message(user_id, text):
 
@@ -70,14 +77,11 @@ async def receive_webhook(request: Request):
         for msg in entry.get("messaging", []):
 
             sender_id = msg["sender"]["id"]
-
             last_user = sender_id
 
             if "message" in msg and "text" in msg["message"]:
 
                 text = msg["message"]["text"]
-
-                print("User said:", text)
 
                 messages.append({
                     "from": "user",
@@ -88,7 +92,7 @@ async def receive_webhook(request: Request):
 
 
 # =========================
-# get messages for dashboard
+# get messages
 # =========================
 @app.get("/messages")
 def get_messages():
@@ -96,7 +100,7 @@ def get_messages():
 
 
 # =========================
-# send reply from dashboard
+# send reply
 # =========================
 @app.post("/send")
 async def send_reply(request: Request):
@@ -107,7 +111,7 @@ async def send_reply(request: Request):
 
     text = data["text"]
 
-    if last_user is not None:
+    if last_user:
 
         send_message(last_user, text)
 
